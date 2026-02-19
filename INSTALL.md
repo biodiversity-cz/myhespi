@@ -1,31 +1,31 @@
 # INSTALL.md
 
-Complete installation and run guide for `hespi` + `myhespi` in this repository.
+Kompletní návod pro instalaci a spuštění `hespi` + `myhespi` v tomto repozitáři.
 
-## 0) Quick install (recommended)
+## 0) Rychlá instalace (doporučeno)
 
-From repository root:
+Z kořenového adresáře repozitáře spusťte:
 
 ```bash
 bash scripts/install_full_stack.sh
 ```
 
-This script:
-- creates `.venv`,
-- pins compatible packaging tools,
-- installs full runtime dependencies for `hespi` + `myhespi`.
+Skript:
+- vytvoří `.venv`,
+- nastaví kompatibilní nástroje pro balíčkování,
+- nainstaluje plné runtime závislosti pro `hespi` + `myhespi`.
 
-## 1) Prerequisites
+## 1) Předpoklady
 
-- OS: macOS (tested on Apple Silicon)
-- Python: `3.11.x` (recommended for current setup)
-- Git repository root: `/Users/pokorny/PyEnv/hespi`
+- OS: macOS (ověřeno na Apple Silicon)
+- Python: `3.11.x` (doporučeno)
+- kořen repozitáře: `/Users/pokorny/PyEnv/hespi`
 
-> Note: `hespi` declares `>=3.10,<3.12`. Python `3.11` is the safest default here.
+> Poznámka: `hespi` deklaruje `>=3.10,<3.12`. Python `3.11` je v tomto setupu nejbezpečnější volba.
 
-## 2) Manual create virtual environment
+## 2) Ruční vytvoření virtuálního prostředí
 
-From repository root:
+Z kořenového adresáře repozitáře:
 
 ```bash
 cd /Users/pokorny/PyEnv/hespi
@@ -34,7 +34,7 @@ source .venv/bin/activate
 python -m pip install -U pip
 ```
 
-If `.venv` is broken after interpreter changes, recreate it:
+Pokud je `.venv` po změně interpreteru rozbité, vytvořte ho znovu:
 
 ```bash
 rm -rf .venv
@@ -42,71 +42,71 @@ python3.11 -m venv .venv
 source .venv/bin/activate
 ```
 
-## 3) Manual install profiles
+## 3) Ruční instalační profily
 
-### A) myHESPI only (web/API + tests)
+### A) Pouze myHESPI (web/API + testy)
 
 ```bash
 pip install -r myhespi/requirements-dev.txt
 ```
 
-This is enough for:
-- app startup,
-- API/web routes,
-- tests with mocked HESPI processing.
+Tento profil stačí pro:
+- spuštění aplikace,
+- web/API routy,
+- testy s mockovaným zpracováním HESPI.
 
-### B) Full runtime (myHESPI + local HESPI processing)
+### B) Plný runtime (myHESPI + lokální HESPI processing)
 
-Because of old metadata in some transitive packages, keep pip below `24.1`:
+Kvůli starším metadata u některých tranzitivních balíčků používejte `pip<24.1`:
 
 ```bash
 pip install -U "pip<24.1"
 pip install --default-timeout=600 --retries=10 -r myhespi/requirements-hespi.txt
 ```
 
-Optional for unstable network:
+Pro méně stabilní síť můžete přidat:
 
 ```bash
 pip install --progress-bar off --default-timeout=600 --retries=10 -r myhespi/requirements-hespi.txt
 ```
 
-## 4) Run tests
+## 4) Spuštění testů
 
 ```bash
 pytest myhespi/tests -q
 ```
 
-## 5) Run application
+## 5) Spuštění aplikace
 
-From repository root with activated `.venv`:
+Z kořenového adresáře repozitáře s aktivovaným `.venv`:
 
 ```bash
 export MYHESPI_API_TOKENS="dev-token"
 python -m myhespi.app
 ```
 
-LLM is disabled by default (`HESPI_LLM_MODEL=none`).
-If you want LLM correction, set both:
+LLM je ve výchozím stavu vypnuté (`HESPI_LLM_MODEL=none`).
+Pokud chcete zapnout LLM korekce, nastavte obě proměnné:
 
 ```bash
 export HESPI_LLM_MODEL="gpt-4o"
 export OPENAI_API_KEY="..."
 ```
 
-App URL:
+URL aplikace:
 - Web: `http://localhost:5001/`
 - API: `http://localhost:5001/api/v1/`
 
-## 6) Quick smoke test
+## 6) Rychlý smoke test
 
-Health:
+Health endpoint:
 
 ```bash
 curl -s -X GET "http://localhost:5001/api/v1/health" \
   -H "Authorization: Bearer dev-token"
 ```
 
-Process one image + export CSV:
+Zpracování obrázku + export CSV:
 
 ```bash
 curl -s -X POST "http://localhost:5001/api/v1/jobs" \
@@ -124,51 +124,50 @@ curl -L -X GET "http://localhost:5001/api/v1/jobs/${JOB_ID}/export/dwc.csv" \
   -o /tmp/dwc.csv
 ```
 
-## 7) PyCharm run configuration
+## 7) Konfigurace běhu v PyCharm
 
-Create Python Run Configuration:
+Vytvořte Python Run Configuration:
 
 - Module name: `myhespi.app`
 - Working directory: `/Users/pokorny/PyEnv/hespi`
 - Interpreter: `/Users/pokorny/PyEnv/hespi/.venv/bin/python`
 - Environment variables: `MYHESPI_API_TOKENS=dev-token`
 
-## 8) Troubleshooting
+## 8) Řešení běžných problémů
 
 ### `ModuleNotFoundError: No module named 'flask'`
 
-You are using a different interpreter than the one with dependencies.
+Používáte jiný interpreter než ten, kde jsou nainstalované závislosti.
 
-Fix:
-- activate `.venv`,
-- run with `python -m myhespi.app`,
-- in PyCharm select `.venv/bin/python`.
+Postup:
+- aktivujte `.venv`,
+- spusťte aplikaci přes `python -m myhespi.app`,
+- v PyCharm vyberte interpreter `.venv/bin/python`.
 
 ### `bad interpreter .../.venv/bin/python3: no such file or directory`
 
-Virtualenv points to an old interpreter.
-Recreate `.venv` (see section 2).
+Virtuální prostředí ukazuje na starý interpreter.
+Vytvořte `.venv` znovu (viz sekce 2).
 
-### `missing_runtime_dependency` (e.g. `rich`, `pandas`)
+### `missing_runtime_dependency` (např. `rich`, `pandas`)
 
-Full HESPI runtime is not installed in current env.
-Install:
+V aktuálním prostředí není nainstalovaný plný HESPI runtime.
 
 ```bash
 pip install -r myhespi/requirements-hespi.txt
 ```
 
-### pip warnings about invalid metadata (`uvicorn`, `click>=7.*`)
+### Pip warningy o nevalidních metadata (`uvicorn`, `click>=7.*`)
 
-Use:
+Použijte:
 
 ```bash
 pip install -U "pip<24.1"
 ```
 
-### `ReadTimeoutError` during large downloads (e.g. torch wheel)
+### `ReadTimeoutError` při stahování velkých balíčků (např. torch wheel)
 
-Use longer timeout and retries:
+Použijte delší timeout a retry:
 
 ```bash
 pip install --default-timeout=600 --retries=10 -r myhespi/requirements-hespi.txt
