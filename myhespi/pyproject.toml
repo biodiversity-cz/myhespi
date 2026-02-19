@@ -1,0 +1,20 @@
+[project]
+name = "myhespi"
+version = "0.1.0"
+description = "Flask web and API wrapper for HESPI"
+readme = "README.md"
+requires-python = ">=3.10,<3.12"
+dependencies = [
+  "Flask>=2.2,<2.3",
+  "pandas>=2.0.0",
+  "hespi",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+

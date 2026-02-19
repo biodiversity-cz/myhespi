@@ -78,6 +78,10 @@ It is recommended that you also install `Tesseract <https://tesseract-ocr.github
 
 To install the development version, see the `documentation for contributing <https://rbturnbull.github.io/hespi/contributing.html>`_.
 
+For local setup of the companion Flask integration module ``myhespi`` in this repository,
+see `INSTALL.md <INSTALL.md>`_.
+The quickest way is running ``bash scripts/install_full_stack.sh`` from repository root.
+
 
 Usage
 ==================================

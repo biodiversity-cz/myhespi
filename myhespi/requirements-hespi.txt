@@ -1,0 +1,4 @@
+-r requirements.txt
+fastai>=2.7,<2.8
+spacy>=3.8,<4
+-e .
