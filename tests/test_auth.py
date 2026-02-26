@@ -28,19 +28,21 @@ def auth_headers():
     return {"Authorization": "Bearer secret-token"}
 
 
-def _fake_payload(input_image, job_dir, job_id, dwc_occ="x"):
+def _fake_payload(input_image, job_dir, job_id):
     """Return a minimal valid payload that process_image would produce."""
     csv_path = job_dir / "dwc.csv"
-    csv_path.write_text(f"occurrenceID\n{dwc_occ}\n", encoding="utf-8")
+    csv_path.write_text("verbatimIdentification\nRosa canina\n", encoding="utf-8")
     return {
         "job_id": job_id,
         "status": "completed",
         "input_image": input_image.name,
         "primary_row_index": 0,
         "all_rows": [{}],
-        "dwc_per_row": [{"occurrenceID": dwc_occ}],
-        "dwc": {"occurrenceID": dwc_occ},
+        "dwc_per_row": [{"verbatimIdentification": "Rosa canina"}],
+        "dwc": {"verbatimIdentification": "Rosa canina"},
         "segments": [],
+        "intermediates": {},
+        "intermediates_per_row": [{}],
     }
 
 
@@ -85,7 +87,7 @@ def test_create_job_rejects_bad_mime(client, auth_headers):
 
 def test_create_job_accepts_jp2(monkeypatch, client, auth_headers):
     def fake(settings, input_image, job_dir, job_id):
-        return _fake_payload(input_image, job_dir, job_id, dwc_occ="jp2")
+        return _fake_payload(input_image, job_dir, job_id)
 
     monkeypatch.setattr("myhespi.services.hespi_runner.process_image", fake)
 
@@ -100,7 +102,7 @@ def test_create_job_accepts_jp2(monkeypatch, client, auth_headers):
 
 def test_export_csv_after_create_job(monkeypatch, client, auth_headers):
     def fake(settings, input_image, job_dir, job_id):
-        return _fake_payload(input_image, job_dir, job_id, dwc_occ="abc")
+        return _fake_payload(input_image, job_dir, job_id)
 
     monkeypatch.setattr("myhespi.services.hespi_runner.process_image", fake)
 
@@ -118,7 +120,7 @@ def test_export_csv_after_create_job(monkeypatch, client, auth_headers):
         headers=auth_headers,
     )
     assert export_resp.status_code == 200
-    assert b"occurrenceID" in export_resp.data
+    assert b"verbatimIdentification" in export_resp.data
 
 
 def test_create_job_missing_runtime_dependency(monkeypatch, client, auth_headers):

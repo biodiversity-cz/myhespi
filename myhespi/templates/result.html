@@ -220,6 +220,8 @@
   <script>
     /* ── Data z backendu ─────────────────────────────────────── */
     var dwcPerRow = {{ payload.dwc_per_row | tojson }};
+    var intermediates = {{ payload.intermediates | tojson }};
+    var intermediatesPerRow = {{ payload.intermediates_per_row | tojson }};
 
     /* ── Přepnutí primárního labelu (více řádků) ─────────────── */
     function selectPrimaryRow(index) {
@@ -231,12 +233,16 @@
         if (input) input.value = row[key] || '';
       }
 
+      if (intermediatesPerRow[index]) {
+        intermediates = intermediatesPerRow[index];
+      }
+
       document.querySelectorAll('.primary-row-btn').forEach(function (btn, i) {
         btn.classList.toggle('active', i === index);
       });
     }
 
-    /* ── Stažení CSV z formuláře ─────────────────────────────── */
+    /* ── Stažení CSV z formuláře + meziprodukty ──────────────── */
     function downloadDwcCsv() {
       var form = document.getElementById('dwc-form');
       var inputs = form.querySelectorAll('input[name]');
@@ -244,10 +250,16 @@
       var values  = [];
 
       inputs.forEach(function (input) {
-        headers.push(input.name);
+        headers.push('"dwc:' + input.name + '"');
         var escaped = input.value.replace(/"/g, '""');
         values.push('"' + escaped + '"');
       });
+
+      for (var key in intermediates) {
+        headers.push('"' + key + '"');
+        var val = (intermediates[key] || '').replace(/"/g, '""');
+        values.push('"' + val + '"');
+      }
 
       var bom = '\uFEFF';
       var csv = bom + headers.join(',') + '\n' + values.join(',') + '\n';

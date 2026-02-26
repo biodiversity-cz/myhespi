@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import math
 import shutil
-import uuid as _uuid
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from pathlib import Path
 
@@ -11,6 +10,15 @@ from werkzeug.utils import secure_filename
 from ..config import Settings
 from ..dwc import map_hespi_row_to_dwc, write_dwc_csv
 from ..services.storage import get_job_dir, save_result
+
+
+_LABEL_FIELDS = (
+    "family", "genus", "species", "infrasp_taxon", "authority",
+    "collector_number", "collector", "locality", "geolocation",
+    "year", "month", "day",
+)
+
+_LABEL_FIELDS_SET = frozenset(_LABEL_FIELDS)
 
 
 class ProcessingTimeoutError(RuntimeError):
@@ -90,24 +98,20 @@ def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: 
 
     dwc_records: list[dict] = []
     for row in all_rows:
-        occ_id = f"urn:uuid:{_uuid.uuid4()}"
-        dwc_records.append(map_hespi_row_to_dwc(row, occ_id).to_dict())
+        dwc_records.append(map_hespi_row_to_dwc(row).to_dict())
 
     primary_idx = 0
     primary_dwc = dwc_records[primary_idx] if dwc_records else {}
 
     if primary_dwc:
-        write_dwc_csv(
-            job_dir / "dwc.csv",
-            map_hespi_row_to_dwc(
-                all_rows[primary_idx], primary_dwc["occurrenceID"]
-            ),
-        )
+        write_dwc_csv(job_dir / "dwc.csv", map_hespi_row_to_dwc(all_rows[primary_idx]))
 
     primary_row = all_rows[primary_idx] if all_rows else {}
     text_segments = _row_segments(primary_row)
     image_segments = _collect_segments(job_dir)
     segments = _merge_segments(text_segments, image_segments)
+
+    intermediates_per_row = [_extract_intermediates(row) for row in all_rows]
 
     return {
         "job_id": job_id,
@@ -118,8 +122,12 @@ def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: 
         "dwc_per_row": dwc_records,
         "dwc": primary_dwc,
         "segments": segments,
+        "intermediates": intermediates_per_row[primary_idx] if intermediates_per_row else {},
+        "intermediates_per_row": intermediates_per_row,
     }
 
+
+# ── Web preview ──────────────────────────────────────────────────
 
 _WEB_SAFE_SUFFIXES = {".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
@@ -142,6 +150,8 @@ def _ensure_web_preview(input_path: Path) -> Path:
         return input_path
 
 
+# ── Sanitization ─────────────────────────────────────────────────
+
 def _sanitize_value(value):
     """Convert a single value to a JSON-safe type."""
     if value is None:
@@ -161,6 +171,42 @@ def _sanitize_row(row: dict) -> dict:
     """Replace NaN, Path and other non-JSON-serializable values."""
     return {key: _sanitize_value(value) for key, value in row.items()}
 
+
+# ── HESPI intermediates extraction ───────────────────────────────
+
+def _flat_text(value) -> str:
+    """Collapse a value (possibly a list) into a single string."""
+    if isinstance(value, list):
+        return " | ".join(str(v) for v in value if v)
+    if not value:
+        return ""
+    return str(value).strip()
+
+
+def _extract_intermediates(row: dict) -> dict:
+    """Build a namespaced dict of HESPI intermediates for CSV export.
+
+    Keys use the convention: hespi:{field}, hespiTrOCR:{field}, hespiTesseract:{field}.
+    """
+    result: dict[str, str] = {
+        "hespi:labelClassification": _flat_text(row.get("label_classification")),
+    }
+
+    for field in _LABEL_FIELDS:
+        result[f"hespi:{field}"] = _flat_text(row.get(field))
+        result[f"hespiTrOCR:{field}"] = (
+            _flat_text(row.get(f"{field}_TrOCR_adjusted"))
+            or _flat_text(row.get(f"{field}_TrOCR_original"))
+        )
+        result[f"hespiTesseract:{field}"] = (
+            _flat_text(row.get(f"{field}_Tesseract_adjusted"))
+            or _flat_text(row.get(f"{field}_Tesseract_original"))
+        )
+
+    return result
+
+
+# ── Segments ─────────────────────────────────────────────────────
 
 def _collect_segments(job_dir: Path) -> list[dict]:
     segments: list[dict] = []
@@ -183,15 +229,15 @@ def _collect_segments(job_dir: Path) -> list[dict]:
 
 
 def _row_segments(row: dict) -> list[dict]:
-    ignored = {"id", "predictions", "label_classification"}
+    """Extract only main label field values as text segments (no intermediates)."""
     segments: list[dict] = []
-    for key, value in row.items():
-        if key in ignored or key.endswith("_match_score"):
-            continue
+    for field in _LABEL_FIELDS:
+        value = row.get(field)
         text = "" if value is None else str(value).strip()
         if not text:
             continue
-        segments.append({"label": key, "text": text})
+        label = field.replace("_", " ")
+        segments.append({"label": label, "text": text})
     return segments
 
 

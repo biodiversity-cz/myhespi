@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import csv
-import uuid
 from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
@@ -9,70 +8,61 @@ from pathlib import Path
 
 @dataclass(frozen=True)
 class DwcRecord:
-    occurrence_id: str
-    basis_of_record: str
+    verbatim_identification: str
     family: str
-    genus: str
+    generic_name: str
     specific_epithet: str
     infraspecific_epithet: str
     scientific_name_authorship: str
-    scientific_name: str
     recorded_by: str
     record_number: str
-    locality: str
-    event_date: str
-    decimal_latitude: str
-    decimal_longitude: str
+    verbatim_locality: str
+    verbatim_event_date: str
+    verbatim_latitude: str
+    verbatim_longitude: str
 
     def to_dict(self) -> dict[str, str]:
         return {
-            "occurrenceID": self.occurrence_id,
-            "basisOfRecord": self.basis_of_record,
+            "verbatimIdentification": self.verbatim_identification,
             "family": self.family,
-            "genus": self.genus,
+            "genericName": self.generic_name,
             "specificEpithet": self.specific_epithet,
             "infraspecificEpithet": self.infraspecific_epithet,
             "scientificNameAuthorship": self.scientific_name_authorship,
-            "scientificName": self.scientific_name,
             "recordedBy": self.recorded_by,
             "recordNumber": self.record_number,
-            "locality": self.locality,
-            "eventDate": self.event_date,
-            "decimalLatitude": self.decimal_latitude,
-            "decimalLongitude": self.decimal_longitude,
+            "verbatimLocality": self.verbatim_locality,
+            "verbatimEventDate": self.verbatim_event_date,
+            "verbatimLatitude": self.verbatim_latitude,
+            "verbatimLongitude": self.verbatim_longitude,
         }
 
 
-def map_hespi_row_to_dwc(row: dict, occurrence_id: str = "") -> DwcRecord:
-    if not occurrence_id:
-        occurrence_id = f"urn:uuid:{uuid.uuid4()}"
-
+def map_hespi_row_to_dwc(row: dict) -> DwcRecord:
     genus = _txt(row.get("genus"))
     species = _txt(row.get("species"))
     infrasp = _txt(row.get("infrasp_taxon"))
     authority = _txt(row.get("authority"))
 
-    scientific_name = " ".join(part for part in [genus, species, infrasp, authority] if part)
+    verbatim_id = " ".join(part for part in [genus, species, infrasp, authority] if part)
 
     lat, lon = _parse_geolocation(_txt(row.get("geolocation")))
 
     return DwcRecord(
-        occurrence_id=occurrence_id,
-        basis_of_record="PreservedSpecimen",
+        verbatim_identification=verbatim_id,
         family=_txt(row.get("family")),
-        genus=genus,
+        generic_name=genus,
         specific_epithet=species,
         infraspecific_epithet=infrasp,
         scientific_name_authorship=authority,
-        scientific_name=scientific_name,
         recorded_by=_txt(row.get("collector")),
         record_number=_txt(row.get("collector_number")),
-        locality=_txt(row.get("locality")),
-        event_date=_event_date(
+        verbatim_locality=_txt(row.get("locality")),
+        verbatim_event_date=_event_date(
             _txt(row.get("year")), _txt(row.get("month")), _txt(row.get("day"))
         ),
-        decimal_latitude=lat,
-        decimal_longitude=lon,
+        verbatim_latitude=lat,
+        verbatim_longitude=lon,
     )
 
 
@@ -94,6 +84,7 @@ def _txt(value) -> str:
 
 
 def _event_date(year: str, month: str, day: str) -> str:
+    """Compose ISO-8601 date from individual parts (YYYY, YYYY-MM, or YYYY-MM-DD)."""
     if not year:
         return ""
     try:
