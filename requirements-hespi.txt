@@ -1,6 +1,13 @@
 # Kompletní závislosti pro myHESPI + HESPI runtime.
 # Instalace: pip install -r requirements-hespi.txt
 #
+# Systémové závislosti (macOS):
+#   brew install tesseract        # OCR engine
+#   brew install tesseract-lang   # další jazyky (čeština, němčina, latina, …)
+#   brew install xz               # nutné pro JP2 a komprimované modely (_lzma)
+# Při použití pyenv nejdřív nainstalujte xz, pak sestavte Python s:
+#   CPPFLAGS="-I$(brew --prefix xz)/include" LDFLAGS="-L$(brew --prefix xz)/lib" pyenv install 3.11.x
+#
 # Flask web framework
 Flask>=2.2,<3.0
 Werkzeug>=2.2,<2.4

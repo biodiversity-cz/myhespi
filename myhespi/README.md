@@ -20,6 +20,17 @@ python -m myhespi
 
 Aplikace poběží na `http://localhost:5001`.
 
+## Systémové požadavky (macOS)
+
+- **Tesseract** (OCR engine): `brew install tesseract` (doporučeno `brew install tesseract-lang` – přidá desítky jazyků včetně češtiny, němčiny a latiny, které se na herbářových etiketách často vyskytují). Bez Tesseractu HESPI nemůže rozpoznávat text na etiketách.
+- **xz** (pro modul `_lzma`): Pokud se objeví chyba **`No module named '_lzma'`**, nainstalujte knihovnu xz a znovu sestavte Python:
+
+```bash
+brew install xz
+# Pak znovu nainstalujte váš Python (pyenv: pyenv uninstall 3.11.x && pyenv install 3.11.x; Homebrew: brew reinstall python@3.11)
+# a znovu vytvořte .venv.
+```
+
 ## Konfigurace (proměnné prostředí)
 
 | Proměnná | Výchozí | Popis |
@@ -32,6 +43,7 @@ Aplikace poběží na `http://localhost:5001`.
 | `HESPI_USE_GPU` | `1` | Použít GPU (1/true/yes) |
 | `HESPI_LLM_MODEL` | `none` | LLM model (např. `gpt-4o`); `none` = vypnuto |
 | `OPENAI_API_KEY` | *(prázdné)* | API klíč pro OpenAI (vyžadováno jen s LLM) |
+| `HF_TOKEN` | *(prázdné)* | Token z [Hugging Face](https://huggingface.co/settings/tokens) – vyšší limity a rychlejší stahování modelů (TrOCR apod.); bez něj to funguje, ale může se zobrazit varování |
 
 ## Testy
 

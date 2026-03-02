@@ -156,8 +156,19 @@ def _sanitize_value(value):
     """Convert a single value to a JSON-safe type."""
     if value is None:
         return ""
-    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
-        return ""
+    if isinstance(value, (int, float)):
+        if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+            return ""
+        return value
+    # numpy scalar types from pandas row.to_dict() are not JSON-serializable
+    if (getattr(type(value), "__module__", "") or "").startswith("numpy") and hasattr(value, "item"):
+        try:
+            v = value.item()
+            if isinstance(v, float) and (math.isnan(v) or math.isinf(v)):
+                return ""
+            return v
+        except (ValueError, AttributeError):
+            return ""
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, list):
