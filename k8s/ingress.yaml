@@ -1,0 +1,27 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: myhespi-ingress
+  annotations:
+    kubernetes.io/tls-acme: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/proxy-body-size: "60m"
+    nginx.org/client-max-body-size: "60m"
+    nginx.ingress.kubernetes.io/custom-http-errors: "599"
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - "myhespi.dyn.cloud.e-infra.cz"
+      secretName: myhespi-dyn-cloud-e-infra-cz-tls
+  rules:
+    - host: "myhespi.dyn.cloud.e-infra.cz"
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: myhespi-svc
+                port:
+                  number: 80

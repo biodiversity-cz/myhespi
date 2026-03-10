@@ -1,0 +1,74 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myhespi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myhespi
+  template:
+    metadata:
+      labels:
+        app: myhespi
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: myhespi
+          image: ghcr.io/biodiversity-cz/myhespi:main
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          ports:
+            - containerPort: 8000
+          env:
+            - name: MYHESPI_API_TOKENS
+              valueFrom:
+                secretKeyRef:
+                  name: myhespi-secrets
+                  key: api-tokens
+                  optional: true
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: myhespi-secrets
+                  key: openai-api-key
+                  optional: true
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: myhespi-secrets
+                  key: hf-token
+                  optional: true
+            - name: HESPI_USE_GPU
+              value: "0"
+            - name: HESPI_LLM_MODEL
+              value: "none"
+            - name: MYHESPI_TEMP_ROOT
+              value: "/app/myhespi-temp"
+            - name: MYHESPI_MAX_UPLOAD_MB
+              value: "50"
+            - name: MYHESPI_PROCESS_TIMEOUT_SECONDS
+              value: "300"
+            - name: MYHESPI_RETENTION_DAYS
+              value: "7"
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "2Gi"
+            limits:
+              cpu: "2"
+              memory: "4Gi"
+          volumeMounts:
+            - name: temp-data
+              mountPath: /app/myhespi-temp
+      volumes:
+        - name: temp-data
+          emptyDir: {}

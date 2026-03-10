@@ -177,3 +177,6 @@ results/
 *.png
 hespi-output/
 myhespi-temp/
+
+# Kubernetes secrets (never commit real secrets)
+k8s/secret.yaml
