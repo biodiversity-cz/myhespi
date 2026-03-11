@@ -20,7 +20,6 @@ WORKDIR /app
 COPY requirements-hespi.txt .
 RUN pip install --no-cache-dir -r requirements-hespi.txt
 
-COPY --chown=appuser:appgroup hespi ./hespi
 COPY --chown=appuser:appgroup myhespi ./myhespi
 COPY --chown=appuser:appgroup pyproject.toml .
 

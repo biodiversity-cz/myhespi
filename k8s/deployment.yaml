@@ -54,7 +54,7 @@ spec:
             - name: MYHESPI_TEMP_ROOT
               value: "/app/myhespi-temp"
             - name: MYHESPI_MAX_UPLOAD_MB
-              value: "50"
+              value: "5"
             - name: MYHESPI_PROCESS_TIMEOUT_SECONDS
               value: "300"
             - name: MYHESPI_RETENTION_DAYS

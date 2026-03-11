@@ -17,10 +17,14 @@
 <body class="bg-light">
   <div class="container py-4">
 
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-2">
       <h1 class="h3 m-0">Výsledek zpracování</h1>
       <a href="/" class="btn btn-outline-secondary btn-sm">Nové zpracování</a>
     </div>
+    <p class="text-muted small mb-3">
+      Zpracováno pomocí <a href="https://github.com/rbturnbull/hespi" target="_blank">HESPI</a>
+      — detekce komponent archu, rozpoznání textu (OCR/HTR) a mapování do Darwin&nbsp;Core.
+    </p>
 
     {# ── Vstupní obrázek ──────────────────────────────────────── #}
     {% if payload.input_image_url %}
