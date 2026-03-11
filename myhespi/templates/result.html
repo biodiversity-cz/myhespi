@@ -6,12 +6,15 @@
   <title>myHESPI – výsledek zpracování</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
-    .segment-thumb  { max-height: 120px; cursor: pointer; }
-    .input-thumb    { max-height: 180px; cursor: pointer; }
-    .comp-thumb     { max-height: 100px; cursor: pointer; border: 2px solid transparent; }
+    .seg-thumb     { max-height: 140px; cursor: pointer; }
+    .input-thumb   { max-height: 220px; cursor: pointer; }
+    .label-thumb   { max-height: 120px; cursor: pointer; border: 2px solid transparent; }
+    .label-thumb:hover,
+    .label-thumb.active { border-color: var(--bs-primary); }
+    .comp-thumb    { max-height: 100px; cursor: pointer; border: 2px solid transparent; }
     .comp-thumb:hover { border-color: var(--bs-primary); }
-    .comp-card.is-primary .comp-thumb { border-color: var(--bs-success); }
-    .dwc-input      { font-size: .85rem; }
+    .dwc-input     { font-size: .85rem; }
+    .field-seg-group { border-left: 3px solid var(--bs-primary); padding-left: .75rem; }
   </style>
 </head>
 <body class="bg-light">
@@ -26,69 +29,102 @@
       — detekce komponent archu, rozpoznání textu (OCR/HTR) a mapování do Darwin&nbsp;Core.
     </p>
 
-    {# ── Vstupní obrázek ──────────────────────────────────────── #}
-    {% if payload.input_image_url %}
+    {% set si = payload.structured_images or {} %}
+
+    {# ── KARTA 1: Vstupní obrázek + sheet segmentace ──────────── #}
     <div class="card shadow-sm mb-4">
-      <div class="card-header">Vstupní obrázek</div>
-      <div class="card-body text-center">
-        <img src="{{ payload.input_image_url }}"
-             class="img-thumbnail input-thumb"
-             alt="Vstupní obrázek"
-             data-bs-toggle="modal"
-             data-bs-target="#imageModal">
-        <div class="text-muted small mt-1">Kliknutím zvětšíte</div>
+      <div class="card-header">Vstupní obrázek a segmentace archu</div>
+      <div class="card-body">
+        <div class="row g-3">
+          {% if payload.input_image_url %}
+          <div class="col-md-6 text-center">
+            <div class="text-muted small mb-1">Originál</div>
+            <img src="{{ payload.input_image_url }}"
+                 class="img-thumbnail input-thumb"
+                 alt="Vstupní obrázek"
+                 data-bs-toggle="modal" data-bs-target="#imgModal"
+                 onclick="showModalImg(this.src, 'Vstupní obrázek')">
+          </div>
+          {% endif %}
+          {% if si.sheet_segmentation_url %}
+          <div class="col-md-6 text-center">
+            <div class="text-muted small mb-1">Detekované komponenty (bounding boxy)</div>
+            <img src="{{ si.sheet_segmentation_url }}"
+                 class="img-thumbnail input-thumb"
+                 alt="Segmentace archu"
+                 data-bs-toggle="modal" data-bs-target="#imgModal"
+                 onclick="showModalImg(this.src, 'Segmentace archu')">
+          </div>
+          {% endif %}
+        </div>
+        <div class="text-muted small mt-2 text-center">Kliknutím zvětšíte</div>
       </div>
     </div>
-    {% endif %}
 
-    {# ── Rozřazení segmentů na komponenty a pole ──────────────── #}
-    {% set components = [] %}
-    {% set fields = [] %}
-    {% for seg in payload.segments %}
-      {% if seg.text %}
-        {% if fields.append(seg) %}{% endif %}
-      {% elif seg.image_url %}
-        {% if seg.label not in ('all', 'preview') %}
-          {% if components.append(seg) %}{% endif %}
-        {% endif %}
-      {% endif %}
-    {% endfor %}
-
-    {# ── Výběr z více kandidátů (pokud HESPI vrátilo víc řádků) #}
-    {% if payload.dwc_per_row | length > 1 %}
+    {# ── KARTA 2: Výběr labelu (náhledy) ─────────────────────── #}
+    {% set labels = si.labels or [] %}
+    {% if labels | length > 1 %}
     <div class="card shadow-sm mb-4">
-      <div class="card-header">Více kandidátů na primární label</div>
+      <div class="card-header">Detekované primární etikety</div>
       <div class="card-body">
         <p class="text-muted small mb-2">
-          HESPI detekoval více primárních labelů. Vyberte, ze kterého chcete převzít data.
+          HESPI detekoval více primárních etiket. Kliknutím vyberte, ze které chcete převzít data.
         </p>
-        <div class="btn-group flex-wrap" role="group">
-          {% for i in range(payload.dwc_per_row | length) %}
-            <button type="button"
-                    class="btn btn-outline-primary primary-row-btn {% if i == payload.primary_row_index %}active{% endif %}"
-                    onclick="selectPrimaryRow({{ i }})">
-              Label {{ i + 1 }}
-            </button>
+        <div class="d-flex flex-wrap gap-3">
+          {% for lbl in labels %}
+          <div class="text-center">
+            {% if lbl.image_url %}
+            <img src="{{ lbl.image_url }}"
+                 class="img-thumbnail label-thumb {% if loop.index0 == payload.primary_row_index %}active{% endif %}"
+                 alt="{{ lbl.label }}"
+                 onclick="selectPrimaryRow({{ loop.index0 }})"
+                 id="label-thumb-{{ loop.index0 }}">
+            {% endif %}
+            <div class="small mt-1">
+              Etiketa {{ loop.index }}
+              {% if loop.index0 == payload.primary_row_index %}
+                <span class="badge text-bg-success">vybraná</span>
+              {% endif %}
+            </div>
+          </div>
           {% endfor %}
         </div>
       </div>
     </div>
     {% endif %}
 
-    <div class="row g-4">
+    {# ── KARTA 3: Rozpoznaná pole + DwC ──────────────────────── #}
+    {% set active_label = labels[payload.primary_row_index] if labels else {} %}
 
-      {# ── Levý sloupec: rozpoznaná pole ─────────────────────── #}
-      <div class="col-lg-6">
-        <div class="card shadow-sm h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Rozpoznaná pole z primárního labelu</span>
-            {% if components %}
-              <a href="#detected-components" class="btn btn-outline-secondary btn-sm">
-                Další komponenty
-              </a>
-            {% endif %}
-          </div>
-          <div class="card-body">
+    <div class="card shadow-sm mb-4">
+      <div class="card-header">
+        Rozpoznaná pole z primární etikety
+      </div>
+      <div class="card-body">
+
+        {# Segmentace labelu (bbox vizualizace) #}
+        {% if active_label.segmentation_url %}
+        <div class="text-center mb-3">
+          <div class="text-muted small mb-1">Segmentace polí na etiketě (bounding boxy)</div>
+          <img src="{{ active_label.segmentation_url }}"
+               class="img-thumbnail" style="max-height: 280px; cursor: pointer;"
+               alt="Segmentace etikety"
+               id="label-segmentation-img"
+               data-bs-toggle="modal" data-bs-target="#imgModal"
+               onclick="showModalImg(this.src, 'Segmentace etikety')">
+        </div>
+        <hr>
+        {% endif %}
+
+        <div class="row g-4">
+          {# Levý sloupec: rozpoznané hodnoty #}
+          <div class="col-lg-6">
+            {% set fields = [] %}
+            {% for seg in payload.segments %}
+              {% if seg.text %}
+                {% if fields.append(seg) %}{% endif %}
+              {% endif %}
+            {% endfor %}
             {% if fields %}
               {% for seg in fields %}
                 <div class="border rounded p-2 mb-2">
@@ -96,11 +132,10 @@
                   <div class="mt-1">{{ seg.text }}</div>
                   {% if seg.image_url %}
                     <img src="{{ seg.image_url }}"
-                         class="img-fluid mt-2 rounded border segment-thumb"
+                         class="img-fluid mt-2 rounded border seg-thumb"
                          alt="{{ seg.label }}"
-                         data-bs-toggle="modal"
-                         data-bs-target="#segModal"
-                         onclick="showSegmentImage(this.src, '{{ seg.label }}')">
+                         data-bs-toggle="modal" data-bs-target="#imgModal"
+                         onclick="showModalImg(this.src, '{{ seg.label }}')">
                   {% endif %}
                 </div>
               {% endfor %}
@@ -108,20 +143,16 @@
               <p class="text-muted mb-0">Nebyla rozpoznána žádná textová pole.</p>
             {% endif %}
           </div>
-        </div>
-      </div>
 
-      {# ── Pravý sloupec: editovatelný DwC záznam ───────────── #}
-      <div class="col-lg-6">
-        <div class="card shadow-sm h-100">
-          <div class="card-header d-flex justify-content-between align-items-center">
-            <span>Darwin Core záznam</span>
-            <button class="btn btn-primary btn-sm" onclick="downloadDwcCsv()">
-              Stáhnout DwC CSV
-            </button>
-          </div>
-          <div class="card-body">
-            <p class="text-muted small mb-3">
+          {# Pravý sloupec: DwC záznam #}
+          <div class="col-lg-6">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+              <span class="fw-semibold">Darwin Core záznam</span>
+              <button class="btn btn-primary btn-sm" onclick="downloadDwcCsv()">
+                Stáhnout DwC CSV
+              </button>
+            </div>
+            <p class="text-muted small mb-2">
               Hodnoty můžete před stažením upravit přímo v tabulce.
             </p>
             <form id="dwc-form">
@@ -147,38 +178,64 @@
           </div>
         </div>
       </div>
-
     </div>
 
-    {# ── Detekované komponenty (dole) ─────────────────────────── #}
-    {% if components %}
-    <div id="detected-components" class="card shadow-sm mt-4">
-      <div class="card-header">Detekované komponenty na listu</div>
+    {# ── KARTA 4: Všechny detekované komponenty ──────────────── #}
+    {% set sheet_comps = si.sheet_components or [] %}
+    {% if sheet_comps or labels %}
+    <div class="card shadow-sm mb-4">
+      <div class="card-header">Všechny detekované segmenty</div>
       <div class="card-body">
-        <p class="text-muted small mb-3">
-          Systém automaticky vybral komponentu pro rozpoznávání textu.
-          Pokud byl vybrán nesprávný label, můžete hodnoty v Darwin Core záznamu
-          upravit ručně na základě obsahu jiného labelu.
-        </p>
-        <div class="d-flex flex-wrap gap-3">
-          {% for comp in components %}
-            {% set is_primary = 'primary specimen label' in comp.label.lower() %}
-            <div class="text-center comp-card {{ 'is-primary' if is_primary }}">
+
+        {# Sheet-level komponenty #}
+        {% if sheet_comps %}
+        <h6 class="text-secondary mb-2">Komponenty archu</h6>
+        <div class="d-flex flex-wrap gap-3 mb-3">
+          {% for comp in sheet_comps %}
+            <div class="text-center">
+              {% if comp.image_url %}
               <img src="{{ comp.image_url }}"
                    class="img-thumbnail comp-thumb rounded"
                    alt="{{ comp.label }}"
-                   data-bs-toggle="modal"
-                   data-bs-target="#segModal"
-                   onclick="showSegmentImage(this.src, '{{ comp.label }}')">
-              <div class="small mt-1">
-                {{ comp.label }}
-                {% if is_primary %}
-                  <span class="badge text-bg-success">primární</span>
-                {% endif %}
-              </div>
+                   data-bs-toggle="modal" data-bs-target="#imgModal"
+                   onclick="showModalImg(this.src, '{{ comp.label }}')">
+              {% endif %}
+              <div class="small mt-1">{{ comp.label }}</div>
             </div>
           {% endfor %}
         </div>
+        {% endif %}
+
+        {# Label-level segmenty #}
+        {% for lbl in labels %}
+        <hr class="my-3">
+        <h6 class="text-secondary mb-2">
+          Segmenty etikety {{ loop.index }}
+          {% if lbl.image_url %}
+            <img src="{{ lbl.image_url }}"
+                 class="img-thumbnail ms-2" style="max-height: 40px; vertical-align: middle;"
+                 alt="{{ lbl.label }}">
+          {% endif %}
+        </h6>
+        {% if lbl.field_segments %}
+        <div class="d-flex flex-wrap gap-3">
+          {% for fs in lbl.field_segments %}
+            <div class="text-center">
+              {% if fs.image_url %}
+              <img src="{{ fs.image_url }}"
+                   class="img-thumbnail comp-thumb rounded"
+                   alt="{{ fs.label }}"
+                   data-bs-toggle="modal" data-bs-target="#imgModal"
+                   onclick="showModalImg(this.src, '{{ fs.label }}')">
+              {% endif %}
+              <div class="small mt-1">{{ fs.label }}</div>
+            </div>
+          {% endfor %}
+        </div>
+        {% else %}
+          <p class="text-muted small mb-0">Nebyly detekovány žádné segmenty.</p>
+        {% endif %}
+        {% endfor %}
       </div>
     </div>
     {% endif %}
@@ -188,33 +245,16 @@
     </div>
   </div>
 
-  {# ── Modal: zvětšený vstupní obrázek ──────────────────────── #}
-  {% if payload.input_image_url %}
-  <div class="modal fade" id="imageModal" tabindex="-1" aria-label="Náhled obrázku" aria-hidden="true">
+  {# ── Modal: zvětšený obrázek (univerzální) ─────────────────── #}
+  <div class="modal fade" id="imgModal" tabindex="-1" aria-label="Náhled" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">
       <div class="modal-content">
         <div class="modal-header py-2">
-          <h6 class="modal-title">Vstupní obrázek</h6>
+          <h6 class="modal-title" id="imgModalLabel">Náhled</h6>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zavřít"></button>
         </div>
         <div class="modal-body p-0 text-center bg-dark">
-          <img src="{{ payload.input_image_url }}" class="img-fluid" alt="Vstupní obrázek">
-        </div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  {# ── Modal: zvětšený segment / komponenta ──────────────────── #}
-  <div class="modal fade" id="segModal" tabindex="-1" aria-label="Náhled segmentu" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header py-2">
-          <h6 class="modal-title" id="segModalLabel">Segment</h6>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Zavřít"></button>
-        </div>
-        <div class="modal-body p-0 text-center bg-dark">
-          <img id="segModalImg" src="" class="img-fluid" alt="Segment">
+          <img id="imgModalImg" src="" class="img-fluid" alt="Náhled">
         </div>
       </div>
     </div>
@@ -226,8 +266,15 @@
     var dwcPerRow = {{ payload.dwc_per_row | tojson }};
     var intermediates = {{ payload.intermediates | tojson }};
     var intermediatesPerRow = {{ payload.intermediates_per_row | tojson }};
+    var structuredImages = {{ payload.structured_images | tojson }};
 
-    /* ── Přepnutí primárního labelu (více řádků) ─────────────── */
+    /* ── Univerzální modal ────────────────────────────────────── */
+    function showModalImg(src, label) {
+      document.getElementById('imgModalImg').src = src;
+      document.getElementById('imgModalLabel').textContent = label;
+    }
+
+    /* ── Přepnutí primárního labelu ────────────────────────────── */
     function selectPrimaryRow(index) {
       var row = dwcPerRow[index];
       if (!row) return;
@@ -241,12 +288,29 @@
         intermediates = intermediatesPerRow[index];
       }
 
-      document.querySelectorAll('.primary-row-btn').forEach(function (btn, i) {
-        btn.classList.toggle('active', i === index);
+      document.querySelectorAll('.label-thumb').forEach(function (thumb, i) {
+        thumb.classList.toggle('active', i === index);
       });
+
+      document.querySelectorAll('.badge.text-bg-success').forEach(function (b) {
+        b.remove();
+      });
+      var thumbEl = document.getElementById('label-thumb-' + index);
+      if (thumbEl) {
+        var badgeDiv = thumbEl.closest('.text-center').querySelector('.small');
+        if (badgeDiv) {
+          badgeDiv.innerHTML = 'Etiketa ' + (index + 1) + ' <span class="badge text-bg-success">vybraná</span>';
+        }
+      }
+
+      var labels = structuredImages.labels || [];
+      if (labels[index] && labels[index].segmentation_url) {
+        var segImg = document.getElementById('label-segmentation-img');
+        if (segImg) segImg.src = labels[index].segmentation_url;
+      }
     }
 
-    /* ── Stažení CSV z formuláře + meziprodukty ──────────────── */
+    /* ── Stažení CSV z formuláře + meziprodukty ────────────────── */
     function downloadDwcCsv() {
       var form = document.getElementById('dwc-form');
       var inputs = form.querySelectorAll('input[name]');
@@ -277,12 +341,6 @@
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
-    }
-
-    /* ── Zobrazení segmentu v modalu ─────────────────────────── */
-    function showSegmentImage(src, label) {
-      document.getElementById('segModalImg').src = src;
-      document.getElementById('segModalLabel').textContent = label;
     }
   </script>
 </body>

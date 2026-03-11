@@ -131,3 +131,28 @@ def _enrich_web_urls(payload: dict, job_id: str) -> None:
             segment["image_url"] = url_for(
                 "web.get_job_file", job_id=job_id, filename=image_path
             )
+
+    si = payload.get("structured_images", {})
+    if si.get("sheet_segmentation"):
+        si["sheet_segmentation_url"] = url_for(
+            "web.get_job_file", job_id=job_id, filename=si["sheet_segmentation"]
+        )
+    for comp in si.get("sheet_components", []):
+        if comp.get("image_path"):
+            comp["image_url"] = url_for(
+                "web.get_job_file", job_id=job_id, filename=comp["image_path"]
+            )
+    for lbl in si.get("labels", []):
+        if lbl.get("image_path"):
+            lbl["image_url"] = url_for(
+                "web.get_job_file", job_id=job_id, filename=lbl["image_path"]
+            )
+        if lbl.get("segmentation_path"):
+            lbl["segmentation_url"] = url_for(
+                "web.get_job_file", job_id=job_id, filename=lbl["segmentation_path"]
+            )
+        for fs in lbl.get("field_segments", []):
+            if fs.get("image_path"):
+                fs["image_url"] = url_for(
+                    "web.get_job_file", job_id=job_id, filename=fs["image_path"]
+                )

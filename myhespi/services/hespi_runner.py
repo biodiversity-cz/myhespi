@@ -111,6 +111,8 @@ def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: 
     image_segments = _collect_segments(job_dir)
     segments = _merge_segments(text_segments, image_segments)
 
+    structured = _collect_structured_images(job_dir)
+
     intermediates_per_row = [_extract_intermediates(row) for row in all_rows]
 
     return {
@@ -122,6 +124,7 @@ def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: 
         "dwc_per_row": dwc_records,
         "dwc": primary_dwc,
         "segments": segments,
+        "structured_images": structured,
         "intermediates": intermediates_per_row[primary_idx] if intermediates_per_row else {},
         "intermediates_per_row": intermediates_per_row,
     }
@@ -215,6 +218,88 @@ def _extract_intermediates(row: dict) -> dict:
         )
 
     return result
+
+
+# ── Structured image collection ───────────────────────────────────
+
+def _collect_structured_images(job_dir: Path) -> dict:
+    """Walk the HESPI output tree and return images grouped by role.
+
+    Returns dict with keys:
+      sheet_segmentation  – path to {stub}.all.jpg (bbox-annotated sheet)
+      sheet_components    – list of {label, image_path} for cropped sheet parts
+                            (excluding primary specimen labels)
+      labels              – list of dicts per primary specimen label:
+                            {image_path, segmentation_path, field_segments}
+                            where field_segments is [{label, image_path}, ...]
+    """
+    result: dict = {
+        "sheet_segmentation": "",
+        "sheet_components": [],
+        "labels": [],
+    }
+
+    allowed = {".jpg", ".jpeg", ".png"}
+
+    for stub_dir in sorted(job_dir.iterdir()):
+        if not stub_dir.is_dir():
+            continue
+
+        stub = stub_dir.name
+        sheet_seg = stub_dir / f"{stub}.all.jpg"
+        if sheet_seg.exists():
+            result["sheet_segmentation"] = sheet_seg.relative_to(job_dir).as_posix()
+
+        for img in sorted(stub_dir.iterdir()):
+            if not img.is_file() or img.suffix.lower() not in allowed:
+                continue
+            if img.name.endswith((".all.jpg", ".thumbnail.jpg", ".medium.jpg")):
+                continue
+
+            rel = img.relative_to(job_dir).as_posix()
+            label = img.stem.split(".")[-1].replace("_", " ").replace("-", " ")
+
+            if "primary specimen label" in label.lower():
+                label_stub_dir = stub_dir / _stem_no_ext(img)
+                label_entry = {
+                    "label": label,
+                    "image_path": rel,
+                    "segmentation_path": "",
+                    "field_segments": [],
+                }
+
+                if label_stub_dir.is_dir():
+                    label_stub = label_stub_dir.name
+                    seg_img = label_stub_dir / f"{label_stub}.all.jpg"
+                    if seg_img.exists():
+                        label_entry["segmentation_path"] = seg_img.relative_to(job_dir).as_posix()
+
+                    for field_img in sorted(label_stub_dir.iterdir()):
+                        if not field_img.is_file() or field_img.suffix.lower() not in allowed:
+                            continue
+                        if field_img.name.endswith((".all.jpg", ".thumbnail.jpg", ".medium.jpg")):
+                            continue
+                        field_label = field_img.stem.split(".")[-1].replace("_", " ").replace("-", " ")
+                        label_entry["field_segments"].append({
+                            "label": field_label,
+                            "image_path": field_img.relative_to(job_dir).as_posix(),
+                        })
+
+                result["labels"].append(label_entry)
+            else:
+                result["sheet_components"].append({
+                    "label": label,
+                    "image_path": rel,
+                })
+
+    return result
+
+
+def _stem_no_ext(path: Path) -> str:
+    """Return filename without the last extension: 'a.b.jpg' -> 'a.b'."""
+    name = path.name
+    dot = name.rfind(".")
+    return name[:dot] if dot > 0 else name
 
 
 # ── Segments ─────────────────────────────────────────────────────
