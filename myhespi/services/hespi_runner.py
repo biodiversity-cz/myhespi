@@ -262,7 +262,7 @@ def _collect_structured_images(job_dir: Path) -> dict:
             label = img.stem.split(".")[-1].replace("_", " ").replace("-", " ")
 
             if "primary specimen label" in label.lower():
-                label_stub_dir = stub_dir / _stem_no_ext(img)
+                label_stub_dir = stub_dir / _hespi_stub(img)
                 label_entry = {
                     "label": label,
                     "image_path": rel,
@@ -307,6 +307,12 @@ def _stem_no_ext(path: Path) -> str:
     name = path.name
     dot = name.rfind(".")
     return name[:dot] if dot > 0 else name
+
+
+def _hespi_stub(path: Path) -> str:
+    """Replicate HESPI's get_stub: strip last extension, replace '. :' with '_'."""
+    stem = _stem_no_ext(path)
+    return stem.replace(" ", "_").replace(".", "_").replace(":", "_").strip()
 
 
 def _label_sort_key(stem: str) -> int:
