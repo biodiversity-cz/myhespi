@@ -184,7 +184,7 @@
     {% set sheet_comps = si.sheet_components or [] %}
     {% if sheet_comps or labels %}
     <div class="card shadow-sm mb-4">
-      <div class="card-header">Všechny detekované segmenty</div>
+      <div class="card-header">Všechny detekované komponenty</div>
       <div class="card-body">
 
         {# Sheet-level komponenty #}
@@ -206,17 +206,27 @@
         </div>
         {% endif %}
 
-        {# Label-level segmenty #}
+        {# Label-level komponenty #}
         {% for lbl in labels %}
         <hr class="my-3">
         <h6 class="text-secondary mb-2">
-          Segmenty etikety {{ loop.index }}
+          Komponenty etikety {{ loop.index }}
           {% if lbl.image_url %}
             <img src="{{ lbl.image_url }}"
                  class="img-thumbnail ms-2" style="max-height: 40px; vertical-align: middle;"
                  alt="{{ lbl.label }}">
           {% endif %}
         </h6>
+        {% if lbl.segmentation_url %}
+        <div class="text-center mb-3">
+          <img src="{{ lbl.segmentation_url }}"
+               class="img-thumbnail" style="max-height: 220px; cursor: pointer;"
+               alt="Segmentace etikety {{ loop.index }}"
+               data-bs-toggle="modal" data-bs-target="#imgModal"
+               onclick="showModalImg(this.src, 'Segmentace etikety {{ loop.index }}')">
+          <div class="text-muted small mt-1">Detekované komponenty etikety (bounding boxy)</div>
+        </div>
+        {% endif %}
         {% if lbl.field_segments %}
         <div class="d-flex flex-wrap gap-3">
           {% for fs in lbl.field_segments %}
@@ -233,7 +243,7 @@
           {% endfor %}
         </div>
         {% else %}
-          <p class="text-muted small mb-0">Nebyly detekovány žádné segmenty.</p>
+          <p class="text-muted small mb-0">Nebyly detekovány žádné komponenty.</p>
         {% endif %}
         {% endfor %}
       </div>

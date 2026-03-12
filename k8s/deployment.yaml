@@ -21,6 +21,7 @@ spec:
       containers:
         - name: myhespi
           image: ghcr.io/biodiversity-cz/myhespi:main
+          imagePullPolicy: Always
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
