@@ -42,7 +42,7 @@ def load_settings() -> Settings:
 
     return Settings(
         api_tokens=tokens,
-        max_upload_mb=_env_int("MYHESPI_MAX_UPLOAD_MB", 50),
+        max_upload_mb=_env_int("MYHESPI_MAX_UPLOAD_MB", 5),
         process_timeout_seconds=_env_int("MYHESPI_PROCESS_TIMEOUT_SECONDS", 300),
         retention_days=_env_int("MYHESPI_RETENTION_DAYS", 30),
         temp_root=Path(os.getenv("MYHESPI_TEMP_ROOT", "myhespi-temp")).resolve(),

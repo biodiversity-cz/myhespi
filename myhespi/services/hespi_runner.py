@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import math
+import re
 import shutil
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from pathlib import Path
@@ -250,6 +251,7 @@ def _collect_structured_images(job_dir: Path) -> dict:
         if sheet_seg.exists():
             result["sheet_segmentation"] = sheet_seg.relative_to(job_dir).as_posix()
 
+        pending_labels = []
         for img in sorted(stub_dir.iterdir()):
             if not img.is_file() or img.suffix.lower() not in allowed:
                 continue
@@ -266,6 +268,7 @@ def _collect_structured_images(job_dir: Path) -> dict:
                     "image_path": rel,
                     "segmentation_path": "",
                     "field_segments": [],
+                    "_sort_key": _label_sort_key(img.stem),
                 }
 
                 if label_stub_dir.is_dir():
@@ -285,12 +288,16 @@ def _collect_structured_images(job_dir: Path) -> dict:
                             "image_path": field_img.relative_to(job_dir).as_posix(),
                         })
 
-                result["labels"].append(label_entry)
+                pending_labels.append(label_entry)
             else:
                 result["sheet_components"].append({
                     "label": label,
                     "image_path": rel,
                 })
+
+        for entry in sorted(pending_labels, key=lambda e: e["_sort_key"]):
+            entry.pop("_sort_key", None)
+            result["labels"].append(entry)
 
     return result
 
@@ -300,6 +307,18 @@ def _stem_no_ext(path: Path) -> str:
     name = path.name
     dot = name.rfind(".")
     return name[:dot] if dot > 0 else name
+
+
+def _label_sort_key(stem: str) -> int:
+    """Extract numeric suffix from label stem for correct ordering.
+
+    HESPI names labels as 'stub.primary_specimen_label' (first, no suffix)
+    and 'stub.primary_specimen_label-2', 'stub.primary_specimen_label-3', etc.
+    Alphabetic sort puts '-2' before no-suffix because ASCII '-' < '.'.
+    This function returns 1 for no suffix, 2 for -2, 3 for -3, etc.
+    """
+    m = re.search(r"-(\d+)$", stem)
+    return int(m.group(1)) if m else 1
 
 
 # ── Segments ─────────────────────────────────────────────────────

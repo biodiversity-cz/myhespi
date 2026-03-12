@@ -245,6 +245,19 @@
     </div>
   </div>
 
+  <footer class="container py-4">
+    <hr>
+    <p class="text-muted small">
+      Tento výstup projektu vznikl za finanční podpory iniciativy EOSC CZ prostřednictvím projektu
+      Národní repozitářová platforma pro výzkumná data (CZ.02.01.01/00/23_014/0008787)
+      financovaného z&nbsp;Programu Johannes Amos Comenius (P&nbsp;JAC) MŠMT.
+    </p>
+    <div class="d-flex align-items-center gap-4">
+      <img src="{{ url_for('static', filename='images/eosc-logo.svg') }}" alt="EOSC CZ" height="60">
+      <img src="{{ url_for('static', filename='images/eu-msmt.svg') }}" alt="EU a MŠMT" height="60">
+    </div>
+  </footer>
+
   {# ── Modal: zvětšený obrázek (univerzální) ─────────────────── #}
   <div class="modal fade" id="imgModal" tabindex="-1" aria-label="Náhled" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered">

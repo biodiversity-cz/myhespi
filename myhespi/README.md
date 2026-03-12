@@ -3,7 +3,7 @@
 Flask aplikace, která obaluje knihovnu
 [HESPI](https://github.com/rbturnbull/hespi) a poskytuje:
 
-- webové rozhraní pro upload herbářového listu a zobrazení výsledků,
+- webové rozhraní pro upload herbářového archu a zobrazení výsledků,
 - verzované REST API (`/api/v1/*`) s tokenovou autentizací,
 - editovatelný náhled a export Darwin Core (DwC) CSV.
 
