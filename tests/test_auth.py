@@ -32,10 +32,11 @@ def _fake_payload(input_image, job_dir, job_id):
     """Return a minimal valid payload that process_image would produce."""
     csv_path = job_dir / "dwc.csv"
     csv_path.write_text("verbatimIdentification\nRosa canina\n", encoding="utf-8")
+    input_image_rel = input_image.relative_to(job_dir).as_posix()
     return {
         "job_id": job_id,
         "status": "completed",
-        "input_image": input_image.name,
+        "input_image": input_image_rel,
         "primary_row_index": 0,
         "all_rows": [{}],
         "dwc_per_row": [{"verbatimIdentification": "Rosa canina"}],
@@ -58,7 +59,7 @@ def test_api_accepts_valid_token(client, auth_headers):
 
 
 def test_create_job_happy_path(monkeypatch, client, auth_headers):
-    def fake(settings, input_image, job_dir, job_id):
+    def fake(settings, input_image, job_dir, job_id, *, label_only=False):
         return _fake_payload(input_image, job_dir, job_id)
 
     monkeypatch.setattr("myhespi.services.hespi_runner.process_image", fake)
@@ -86,7 +87,7 @@ def test_create_job_rejects_bad_mime(client, auth_headers):
 
 
 def test_create_job_accepts_jp2(monkeypatch, client, auth_headers):
-    def fake(settings, input_image, job_dir, job_id):
+    def fake(settings, input_image, job_dir, job_id, *, label_only=False):
         return _fake_payload(input_image, job_dir, job_id)
 
     monkeypatch.setattr("myhespi.services.hespi_runner.process_image", fake)
@@ -101,7 +102,7 @@ def test_create_job_accepts_jp2(monkeypatch, client, auth_headers):
 
 
 def test_export_csv_after_create_job(monkeypatch, client, auth_headers):
-    def fake(settings, input_image, job_dir, job_id):
+    def fake(settings, input_image, job_dir, job_id, *, label_only=False):
         return _fake_payload(input_image, job_dir, job_id)
 
     monkeypatch.setattr("myhespi.services.hespi_runner.process_image", fake)
@@ -124,7 +125,7 @@ def test_export_csv_after_create_job(monkeypatch, client, auth_headers):
 
 
 def test_create_job_missing_runtime_dependency(monkeypatch, client, auth_headers):
-    def fake(settings, input_image, job_dir, job_id):
+    def fake(settings, input_image, job_dir, job_id, *, label_only=False):
         raise ProcessingDependencyError("pandas")
 
     monkeypatch.setattr("myhespi.services.hespi_runner.process_image", fake)
@@ -142,7 +143,7 @@ def test_create_job_missing_runtime_dependency(monkeypatch, client, auth_headers
 
 
 def test_create_job_runtime_error(monkeypatch, client, auth_headers):
-    def fake(settings, input_image, job_dir, job_id):
+    def fake(settings, input_image, job_dir, job_id, *, label_only=False):
         raise ProcessingRuntimeError("missing OPENAI_API_KEY")
 
     monkeypatch.setattr("myhespi.services.hespi_runner.process_image", fake)
@@ -156,3 +157,28 @@ def test_create_job_runtime_error(monkeypatch, client, auth_headers):
     assert response.status_code == 500
     payload = response.get_json()
     assert payload["error"]["code"] == "processing_runtime_error"
+
+
+def test_create_job_label_only_mode(monkeypatch, client, auth_headers):
+    """When label_only=1, run_processing saves to label_only/ and process_image receives label_only=True."""
+    seen_label_only = []
+
+    def fake(settings, input_image, job_dir, job_id, *, label_only=False):
+        seen_label_only.append(label_only)
+        return _fake_payload(input_image, job_dir, job_id)
+
+    monkeypatch.setattr("myhespi.services.hespi_runner.process_image", fake)
+
+    response = client.post(
+        "/api/v1/jobs",
+        headers=auth_headers,
+        data={
+            "image": (io.BytesIO(b"fake-image"), "mylabel.png", "image/png"),
+            "label_only": "1",
+        },
+        content_type="multipart/form-data",
+    )
+    assert response.status_code == 200
+    assert seen_label_only == [True]
+    payload = response.get_json()
+    assert "label_only" in payload["input_image"]  # path contains label_only dir

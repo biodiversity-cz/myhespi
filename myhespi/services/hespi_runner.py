@@ -36,25 +36,40 @@ class ProcessingRuntimeError(RuntimeError):
     pass
 
 
-def run_processing(settings: Settings, image_file, job_id: str) -> dict:
+def run_processing(settings: Settings, image_file, job_id: str, *, label_only: bool = False) -> dict:
     """Create job directory, save uploaded file, run HESPI and persist the result.
 
     On any processing error the job directory is removed before re-raising.
     Returns the raw payload (without URL fields – callers add those).
+
+    When label_only is True, the image is treated as a pre-cropped primary specimen label;
+    sheet segmentation is skipped and primary_specimen_label_detect is called directly.
     """
     job_dir = get_job_dir(settings.temp_root, job_id)
     job_dir.mkdir(parents=True, exist_ok=True)
 
     input_name = secure_filename(image_file.filename or "input.jpg") or "input.jpg"
-    input_path = job_dir / input_name
+    ext = Path(input_name).suffix.lower()
+    if ext == ".jpeg":
+        ext = ".jpg"
+    elif ext not in {".jpg", ".png", ".tif", ".tiff", ".jp2"}:
+        ext = ".jpg"
+
+    if label_only:
+        label_dir = job_dir / "label_only"
+        label_dir.mkdir(parents=True, exist_ok=True)
+        input_path = label_dir / f"label.primary_specimen_label{ext}"
+    else:
+        input_path = job_dir / input_name
+
     image_file.save(input_path)
 
     preview_path = _ensure_web_preview(input_path)
 
     try:
-        payload = process_image(settings, input_path, job_dir, job_id)
+        payload = process_image(settings, input_path, job_dir, job_id, label_only=label_only)
         if preview_path != input_path:
-            payload["preview_image"] = preview_path.name
+            payload["preview_image"] = preview_path.relative_to(job_dir).as_posix()
         save_result(job_dir, payload)
         return payload
     except Exception:
@@ -62,10 +77,10 @@ def run_processing(settings: Settings, image_file, job_id: str) -> dict:
         raise
 
 
-def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: str) -> dict:
+def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: str, *, label_only: bool = False) -> dict:
     """Run HESPI detection and build structured payload (no URLs)."""
 
-    def _run_hespi():
+    def _run_hespi_full():
         try:
             from hespi.hespi import Hespi
         except ModuleNotFoundError as exc:
@@ -78,8 +93,32 @@ def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: 
         )
         return detector.detect([input_image], output_dir=job_dir, report=False)
 
+    def _run_hespi_label_only():
+        try:
+            from hespi.hespi import Hespi
+            from hespi.util import ocr_data_df
+        except ModuleNotFoundError as exc:
+            raise ProcessingDependencyError(exc.name or "unknown") from exc
+
+        detector = Hespi(
+            gpu=settings.hespi_use_gpu,
+            llm_model=settings.hespi_llm_model,
+            llm_api_key=settings.openai_api_key,
+        )
+        stub = "label_only"
+        output_dir = job_dir / stub
+        row = detector.primary_specimen_label_detect(
+            component=input_image,
+            stub=stub,
+            output_dir=output_dir,
+        )
+        ocr_data = {str(input_image): row}
+        return ocr_data_df(ocr_data, output_path=job_dir / "hespi-results.csv")
+
     with ThreadPoolExecutor(max_workers=1) as executor:
-        future = executor.submit(_run_hespi)
+        future = executor.submit(
+            _run_hespi_label_only if label_only else _run_hespi_full
+        )
         try:
             df = future.result(timeout=settings.process_timeout_seconds)
         except FutureTimeoutError as exc:
@@ -116,10 +155,12 @@ def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: 
 
     intermediates_per_row = [_extract_intermediates(row) for row in all_rows]
 
+    input_image_rel = input_image.relative_to(job_dir).as_posix()
+
     return {
         "job_id": job_id,
         "status": "completed",
-        "input_image": input_image.name,
+        "input_image": input_image_rel,
         "primary_row_index": primary_idx,
         "all_rows": all_rows,
         "dwc_per_row": dwc_records,
@@ -240,7 +281,7 @@ def _collect_structured_images(job_dir: Path) -> dict:
         "labels": [],
     }
 
-    allowed = {".jpg", ".jpeg", ".png"}
+    allowed = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".jp2"}
 
     for stub_dir in sorted(job_dir.iterdir()):
         if not stub_dir.is_dir():

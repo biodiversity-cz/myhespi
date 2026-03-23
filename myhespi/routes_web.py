@@ -68,11 +68,14 @@ def process_upload():
     if image.mimetype not in ALLOWED_MIME_TYPES:
         return _web_error(415, "Povolené formáty: JPEG, PNG, TIFF a JP2.")
 
+    label_only = request.form.get("input_mode") == "label"
+
     job_id = new_job_id()
     run_processing(
         settings=current_app.config["MYHESPI_SETTINGS"],
         image_file=image,
         job_id=job_id,
+        label_only=label_only,
     )
     return redirect(url_for("web.result_page", job_id=job_id))
 

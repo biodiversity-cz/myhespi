@@ -68,11 +68,14 @@ def create_job():
             "Supported file types: JPEG, PNG, TIFF, JP2.",
         )
 
+    label_only = request.form.get("label_only", "").lower() in ("1", "true", "yes")
+
     job_id = new_job_id()
     payload = run_processing(
         settings=current_app.config["MYHESPI_SETTINGS"],
         image_file=image,
         job_id=job_id,
+        label_only=label_only,
     )
     _enrich_api_urls(payload, job_id)
     return payload, 200

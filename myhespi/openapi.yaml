@@ -44,6 +44,12 @@ paths:
                 image:
                   type: string
                   format: binary
+                label_only:
+                  type: boolean
+                  description: |
+                    When true, the image is treated as a pre-cropped primary specimen label;
+                    sheet segmentation is skipped for faster processing.
+                  default: false
             encoding:
               image:
                 contentType: image/jpeg, image/png, image/tiff, image/jp2
