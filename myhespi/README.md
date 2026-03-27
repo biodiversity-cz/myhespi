@@ -41,8 +41,9 @@ brew install xz
 | `MYHESPI_RETENTION_DAYS` | `30` | Retence dočasných souborů |
 | `MYHESPI_TEMP_ROOT` | `myhespi-temp` | Kořenový adresář pro dočasné soubory |
 | `HESPI_USE_GPU` | `1` | Použít GPU (1/true/yes) |
-| `HESPI_LLM_MODEL` | `none` | LLM model (např. `gpt-4o`); `none` = vypnuto |
-| `OPENAI_API_KEY` | *(prázdné)* | API klíč pro OpenAI (vyžadováno jen s LLM) |
+| `HESPI_LLM_MODEL` | `none` | LLM model (např. `gpt-4o`, nebo přesný název z e-infra); `none` = vypnuto |
+| `HESPI_LLM_BASE_URL` | *(prázdné)* | Základní URL OpenAI-kompatibilního API (např. `https://llm.ai.e-infra.cz/v1` pro [Chat AI](https://docs.cerit.io/en/docs/ai-as-a-service/chat-ai)). Prázdné = výchozí endpoint OpenAI. Alternativa: `OPENAI_BASE_URL` (stejný význam, nižší priorita). |
+| `OPENAI_API_KEY` | *(prázdné)* | API klíč (OpenAI, nebo klíč z Open WebUI pro e-infra); vyžadováno s LLM |
 | `HF_TOKEN` | *(prázdné)* | Token z [Hugging Face](https://huggingface.co/settings/tokens) – vyšší limity a rychlejší stahování modelů (TrOCR apod.); bez něj to funguje, ale může se zobrazit varování |
 
 ## Testy

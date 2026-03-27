@@ -90,6 +90,7 @@ def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: 
             gpu=settings.hespi_use_gpu,
             llm_model=settings.hespi_llm_model,
             llm_api_key=settings.openai_api_key,
+            llm_base_url=settings.hespi_llm_base_url,
         )
         return detector.detect([input_image], output_dir=job_dir, report=False)
 
@@ -104,6 +105,7 @@ def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: 
             gpu=settings.hespi_use_gpu,
             llm_model=settings.hespi_llm_model,
             llm_api_key=settings.openai_api_key,
+            llm_base_url=settings.hespi_llm_base_url,
         )
         stub = "label_only"
         output_dir = job_dir / stub

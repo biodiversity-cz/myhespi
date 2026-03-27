@@ -20,6 +20,14 @@ def _env_int(name: str, default: int) -> int:
     return int(value)
 
 
+def _llm_base_url() -> str:
+    """OpenAI-compatible API base URL (e.g. e-infra Chat AI). HESPI_LLM_BASE_URL wins over OPENAI_BASE_URL."""
+    primary = os.getenv("HESPI_LLM_BASE_URL", "").strip()
+    if primary:
+        return primary
+    return os.getenv("OPENAI_BASE_URL", "").strip()
+
+
 @dataclass(frozen=True)
 class Settings:
     api_tokens: frozenset[str]
@@ -29,6 +37,7 @@ class Settings:
     temp_root: Path
     hespi_use_gpu: bool
     hespi_llm_model: str
+    hespi_llm_base_url: str
     openai_api_key: str
 
     @property
@@ -48,5 +57,6 @@ def load_settings() -> Settings:
         temp_root=Path(os.getenv("MYHESPI_TEMP_ROOT", "myhespi-temp")).resolve(),
         hespi_use_gpu=os.getenv("HESPI_USE_GPU", "1").lower() in {"1", "true", "yes"},
         hespi_llm_model=os.getenv("HESPI_LLM_MODEL", "none"),
+        hespi_llm_base_url=_llm_base_url(),
         openai_api_key=os.getenv("OPENAI_API_KEY", ""),
     )
