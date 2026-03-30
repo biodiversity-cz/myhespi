@@ -51,7 +51,7 @@ spec:
             - name: HESPI_USE_GPU
               value: "0"
             - name: HESPI_LLM_MODEL
-              value: "gpt-oss-120b"
+              value: "deepseek-v3.2-thinking"
             # OpenAI-compatible LLM API (e.g. e-INFRA Chat AI). Leave empty for OpenAI default or LLM off.
             - name: HESPI_LLM_BASE_URL
               value: "https://llm.ai.e-infra.cz/v1"
