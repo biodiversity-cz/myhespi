@@ -52,8 +52,6 @@ spec:
               value: "1"
             - name: HESPI_LLM_MODEL
               value: "none"
-            - name: HESPI_TROCR_SIZE
-              value: "small"
             - name: HESPI_BATCH_SIZE
               value: "16"
             - name: HESPI_SHEET_COMPONENT_RES

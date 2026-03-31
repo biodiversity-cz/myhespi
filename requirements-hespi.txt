@@ -10,6 +10,8 @@
 #
 # HESPI (upstream) — stáhne si všechny ML závislosti automaticky
 hespi>=0.6.0
+# TrOCR tokenizer runtime dependency
+sentencepiece==0.2.0
 # Flask web framework
 Flask>=2.2,<3.0
 Werkzeug>=2.2,<2.4
