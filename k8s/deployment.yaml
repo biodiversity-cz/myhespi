@@ -49,9 +49,17 @@ spec:
                   key: hf-token
                   optional: true
             - name: HESPI_USE_GPU
-              value: "0"
+              value: "1"
             - name: HESPI_LLM_MODEL
-              value: "deepseek-v3.2-thinking"
+              value: "none"
+            - name: HESPI_TROCR_SIZE
+              value: "small"
+            - name: HESPI_BATCH_SIZE
+              value: "16"
+            - name: HESPI_SHEET_COMPONENT_RES
+              value: "640"
+            - name: HESPI_LABEL_FIELD_RES
+              value: "640"
             # OpenAI-compatible LLM API (e.g. e-INFRA Chat AI). Leave empty for OpenAI default or LLM off.
             - name: HESPI_LLM_BASE_URL
               value: "https://llm.ai.e-infra.cz/v1"
@@ -67,9 +75,11 @@ spec:
             requests:
               cpu: "500m"
               memory: "4Gi"
+              nvidia.com/gpu: 1
             limits:
               cpu: "4"
               memory: "32Gi"
+              nvidia.com/gpu: 1
           volumeMounts:
             - name: temp-data
               mountPath: /app/myhespi-temp

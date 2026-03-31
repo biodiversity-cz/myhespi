@@ -89,6 +89,10 @@ def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: 
         detector = Hespi(
             gpu=settings.hespi_use_gpu,
             llm_model=settings.hespi_llm_model,
+            trocr_size=settings.hespi_trocr_size,
+            batch_size=settings.hespi_batch_size,
+            sheet_component_res=settings.hespi_sheet_component_res,
+            label_field_res=settings.hespi_label_field_res,
             llm_api_key=settings.openai_api_key,
             llm_base_url=settings.hespi_llm_base_url,
         )
@@ -104,6 +108,10 @@ def process_image(settings: Settings, input_image: Path, job_dir: Path, job_id: 
         detector = Hespi(
             gpu=settings.hespi_use_gpu,
             llm_model=settings.hespi_llm_model,
+            trocr_size=settings.hespi_trocr_size,
+            batch_size=settings.hespi_batch_size,
+            sheet_component_res=settings.hespi_sheet_component_res,
+            label_field_res=settings.hespi_label_field_res,
             llm_api_key=settings.openai_api_key,
             llm_base_url=settings.hespi_llm_base_url,
         )

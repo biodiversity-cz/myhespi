@@ -37,6 +37,10 @@ class Settings:
     temp_root: Path
     hespi_use_gpu: bool
     hespi_llm_model: str
+    hespi_trocr_size: str
+    hespi_batch_size: int
+    hespi_sheet_component_res: int
+    hespi_label_field_res: int
     hespi_llm_base_url: str
     openai_api_key: str
 
@@ -57,6 +61,10 @@ def load_settings() -> Settings:
         temp_root=Path(os.getenv("MYHESPI_TEMP_ROOT", "myhespi-temp")).resolve(),
         hespi_use_gpu=os.getenv("HESPI_USE_GPU", "1").lower() in {"1", "true", "yes"},
         hespi_llm_model=os.getenv("HESPI_LLM_MODEL", "none"),
+        hespi_trocr_size=os.getenv("HESPI_TROCR_SIZE", "small"),
+        hespi_batch_size=_env_int("HESPI_BATCH_SIZE", 16),
+        hespi_sheet_component_res=_env_int("HESPI_SHEET_COMPONENT_RES", 640),
+        hespi_label_field_res=_env_int("HESPI_LABEL_FIELD_RES", 640),
         hespi_llm_base_url=_llm_base_url(),
         openai_api_key=os.getenv("OPENAI_API_KEY", ""),
     )
