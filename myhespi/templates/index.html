@@ -59,7 +59,10 @@
                        accept=".jpg,.jpeg,.png,.tif,.tiff,.jp2" required>
               </div>
               <div class="small text-muted mb-3">
-                Maximální velikost: {{ max_upload_mb }}&nbsp;MB. Povolené formáty: JPEG, PNG, TIFF, JP2.
+                Maximální velikost souboru: {{ max_upload_mb }}&nbsp;MB. Povolené formáty: JPEG, PNG, TIFF, JP2.
+                {% if max_image_long_side > 0 %}
+                Po nahrání může být obrázek zmenšen tak, aby delší strana měla nejvýše {{ max_image_long_side }}&nbsp;px (zkrátí se čas zpracování u velkých fotek).
+                {% endif %}
               </div>
               <button type="submit" class="btn btn-primary" id="submit-btn">
                 Zpracovat

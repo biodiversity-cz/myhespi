@@ -37,6 +37,7 @@ brew install xz
 |---|---|---|
 | `MYHESPI_API_TOKENS` | *(prázdné)* | Čárkou oddělené API tokeny |
 | `MYHESPI_MAX_UPLOAD_MB` | `50` | Maximální velikost uploadu v MB |
+| `MYHESPI_MAX_IMAGE_LONG_SIDE` | `2560` | Po nahrání zmenšit obrázek tak, aby delší strana měla nejvýše tolik px (`0` = resize vypnuto) |
 | `MYHESPI_PROCESS_TIMEOUT_SECONDS` | `60` | Timeout zpracování HESPI |
 | `MYHESPI_RETENTION_DAYS` | `30` | Retence dočasných souborů |
 | `MYHESPI_TEMP_ROOT` | `myhespi-temp` | Kořenový adresář pro dočasné soubory |

@@ -56,6 +56,7 @@ def index():
     return render_template(
         "index.html",
         max_upload_mb=current_app.config["MYHESPI_MAX_UPLOAD_MB"],
+        max_image_long_side=current_app.config["MYHESPI_MAX_IMAGE_LONG_SIDE"],
     )
 
 

@@ -21,6 +21,7 @@ def create_app() -> Flask:
         MYHESPI_RETENTION_DAYS=settings.retention_days,
         MYHESPI_TEMP_ROOT=settings.temp_root,
         MYHESPI_SETTINGS=settings,
+        MYHESPI_MAX_IMAGE_LONG_SIDE=settings.max_image_long_side,
         MAX_CONTENT_LENGTH=settings.max_upload_bytes,
     )
 

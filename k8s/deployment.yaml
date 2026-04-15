@@ -49,7 +49,7 @@ spec:
                   key: hf-token
                   optional: true
             - name: HESPI_USE_GPU
-              value: "1"
+              value: "0"
             - name: HESPI_LLM_MODEL
               value: "none"
             - name: HESPI_TROCR_SIZE
@@ -67,6 +67,8 @@ spec:
               value: "/app/myhespi-temp"
             - name: MYHESPI_MAX_UPLOAD_MB
               value: "5"
+            - name: MYHESPI_MAX_IMAGE_LONG_SIDE
+              value: "2560"
             - name: MYHESPI_PROCESS_TIMEOUT_SECONDS
               value: "300"
             - name: MYHESPI_RETENTION_DAYS
@@ -75,11 +77,9 @@ spec:
             requests:
               cpu: "500m"
               memory: "4Gi"
-              nvidia.com/gpu: 1
             limits:
               cpu: "4"
               memory: "32Gi"
-              nvidia.com/gpu: 1
           volumeMounts:
             - name: temp-data
               mountPath: /app/myhespi-temp

@@ -36,3 +36,15 @@ def test_hespi_runtime_env_values(monkeypatch):
     assert s.hespi_batch_size == 16
     assert s.hespi_sheet_component_res == 640
     assert s.hespi_label_field_res == 640
+
+
+def test_max_image_long_side_default(monkeypatch):
+    monkeypatch.delenv("MYHESPI_MAX_IMAGE_LONG_SIDE", raising=False)
+    s = load_settings()
+    assert s.max_image_long_side == 2560
+
+
+def test_max_image_long_side_zero_disables(monkeypatch):
+    monkeypatch.setenv("MYHESPI_MAX_IMAGE_LONG_SIDE", "0")
+    s = load_settings()
+    assert s.max_image_long_side == 0

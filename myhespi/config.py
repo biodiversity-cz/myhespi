@@ -43,6 +43,7 @@ class Settings:
     hespi_label_field_res: int
     hespi_llm_base_url: str
     openai_api_key: str
+    max_image_long_side: int
 
     @property
     def max_upload_bytes(self) -> int:
@@ -67,4 +68,5 @@ def load_settings() -> Settings:
         hespi_label_field_res=_env_int("HESPI_LABEL_FIELD_RES", 640),
         hespi_llm_base_url=_llm_base_url(),
         openai_api_key=os.getenv("OPENAI_API_KEY", ""),
+        max_image_long_side=_env_int("MYHESPI_MAX_IMAGE_LONG_SIDE", 2560),
     )

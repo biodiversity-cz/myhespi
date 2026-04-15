@@ -10,6 +10,7 @@ from werkzeug.utils import secure_filename
 
 from ..config import Settings
 from ..dwc import map_hespi_row_to_dwc, write_dwc_csv
+from ..image_resize import resize_upload_if_needed
 from ..services.storage import get_job_dir, save_result
 
 
@@ -63,6 +64,7 @@ def run_processing(settings: Settings, image_file, job_id: str, *, label_only: b
         input_path = job_dir / input_name
 
     image_file.save(input_path)
+    resize_upload_if_needed(input_path, settings.max_image_long_side)
 
     preview_path = _ensure_web_preview(input_path)
 
