@@ -12,9 +12,22 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
+        - "hespi.biodiversity.cz"
+      secretName: hespi-biodiversity-cz-tls
+    - hosts:
         - "myhespi.dyn.cloud.e-infra.cz"
       secretName: myhespi-dyn-cloud-e-infra-cz-tls
   rules:
+    - host: "hespi.biodiversity.cz"
+      http:
+        paths:
+          - path: /
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: myhespi-svc
+                port:
+                  number: 80
     - host: "myhespi.dyn.cloud.e-infra.cz"
       http:
         paths:
