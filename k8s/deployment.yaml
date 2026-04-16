@@ -66,7 +66,7 @@ spec:
             - name: MYHESPI_TEMP_ROOT
               value: "/app/myhespi-temp"
             - name: MYHESPI_MAX_UPLOAD_MB
-              value: "5"
+              value: "100"
             - name: MYHESPI_MAX_IMAGE_LONG_SIDE
               value: "2560"
             - name: MYHESPI_PROCESS_TIMEOUT_SECONDS
